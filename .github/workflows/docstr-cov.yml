@@ -1,0 +1,92 @@
+# Log in to jsonbin.org with yout GitHub account to get an API key and 
+# store it as a repository secret.
+
+# Updated badge will be available at:
+# https://img.shields.io/endpoint?url=https://jsonbin.org/<username>/<repository>/badges/docstr-cov
+
+name: docstr-cov
+
+on:
+  push:
+    branches:
+    - main
+
+  pull_request:
+    branches:
+    - main
+
+env:
+  PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+  PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  TOKEN: ${{ secrets.JSONBIN_APIKEY }}
+  
+jobs:
+
+  check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.x
+
+      - name: Install docstr-coverage
+        run: pip install docstr-coverage
+
+      - name: Get base coverage
+        run: |
+          git checkout $PR_BASE_SHA
+          echo "BASE_COV=$(docstr-coverage -p)" >> $GITHUB_ENV
+
+      - name: Get head coverage
+        run: |
+          git checkout $PR_HEAD_SHA
+          docstr-coverage --fail-under=$BASE_COV
+
+      - name: Blame
+        run: |
+          git diff --name-only $(git merge-base $PR_BASE_SHA $PR_HEAD_SHA) | xargs docstr-coverage --accept-empty
+        if: failure()
+
+  post:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.x
+
+      - name: Install docstr-coverage
+        run: pip install docstr-coverage
+
+      - name: Get coverage (rounded)
+        run: echo "NEW_COV=$(printf "%.f" $(docstr-coverage -p))" >> $GITHUB_ENV
+
+      - name: Post results
+        run: |
+          curl -X POST $URL -H "authorization: token $TOKEN" -d "{ \"schemaVersion\": 1, \"label\": \"docstr-cov\", \"message\": \"${{ env.NEW_COV }}%\", \"color\": \"orange\" }"
+        env:
+          URL: https://jsonbin.org/${{ github.repository_owner }}/${{ github.event.repository.name }}/badges/docstr-cov
+
+      - name: Make endpoint public
+        run: |
+          curl -X PUT $URL -H "authorization: token $TOKEN"
+        env:
+          URL: https://jsonbin.org/${{ github.repository_owner }}/${{ github.event.repository.name }}/_perms
+
+      - name: Display badge URL
+        run: echo $URL
+        env:
+          URL: https://img.shields.io/endpoint?url=https://jsonbin.org/${{ github.repository_owner }}/${{ github.event.repository.name }}/badges/docstr-cov
