@@ -14,4 +14,7 @@ def mult(a,b):
     return a*b
     
 def div(a,b):
+    """
+    Divide two numbers
+    """
     return a/b
