@@ -18,6 +18,7 @@ on:
 env:
   PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
   PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  BASE_URL: https://jsonbin.org/${{ github.repository_owner }}/${{ github.event.repository.name }}
   TOKEN: ${{ secrets.JSONBIN_APIKEY }}
   
 jobs:
@@ -51,7 +52,8 @@ jobs:
 
       - name: Blame
         run: |
-          git diff --name-only $(git merge-base $PR_BASE_SHA $PR_HEAD_SHA) | xargs docstr-coverage --accept-empty
+          git diff --name-only $(git merge-base $PR_BASE_SHA $PR_HEAD_SHA) | \
+          xargs docstr-coverage --accept-empty
         if: failure()
 
   post:
@@ -76,17 +78,20 @@ jobs:
 
       - name: Post results
         run: |
-          curl -X POST $URL -H "authorization: token $TOKEN" -d "{ \"schemaVersion\": 1, \"label\": \"docstr-cov\", \"message\": \"${{ env.NEW_COV }}%\", \"color\": \"orange\" }"
+          curl -X POST $URL -H "authorization: token $TOKEN" \
+          -d "{ \"schemaVersion\": 1, \"label\": \"docstr-cov\", \
+                \"message\": \"${{ env.NEW_COV }}%\", \"color\": \
+                \"orange\" }"
         env:
-          URL: https://jsonbin.org/${{ github.repository_owner }}/${{ github.event.repository.name }}/badges/docstr-cov
+          URL: ${{ env.BASE_URL }}/badges/docstr-cov
 
       - name: Make endpoint public
         run: |
           curl -X PUT $URL -H "authorization: token $TOKEN"
         env:
-          URL: https://jsonbin.org/${{ github.repository_owner }}/${{ github.event.repository.name }}/_perms
+          URL: ${{ env.BASE_URL }}/_perms
 
       - name: Display badge URL
         run: echo $URL
         env:
-          URL: https://img.shields.io/endpoint?url=https://jsonbin.org/${{ github.repository_owner }}/${{ github.event.repository.name }}/badges/docstr-cov
+          URL: https://img.shields.io/endpoint?url=${{ env.BASE_URL }}/badges/docstr-cov
