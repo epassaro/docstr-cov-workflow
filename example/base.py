@@ -5,6 +5,9 @@ def add(a,b):
     return a+b
 
 def sub(a,b):
+    """
+    Substract two numbers
+    """
     return a-b
 
 def mult(a,b):
