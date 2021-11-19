@@ -18,3 +18,6 @@ def div(a,b):
     Divide two numbers
     """
     return a/b
+
+def foo(a,b):
+    return None
