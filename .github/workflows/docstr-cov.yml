@@ -1,3 +1,9 @@
+# Log in to jsonbin.org with yout GitHub account to get an API key and 
+# store it as a repository secret.
+
+# Updated badge will be available at:
+# https://img.shields.io/endpoint?url=https://jsonbin.org/<username>/<repository>/badges/docstr-cov
+
 name: docstr-cov
 
 on:
