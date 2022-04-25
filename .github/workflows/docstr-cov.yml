@@ -1,4 +1,4 @@
-# Log in to jsonbin.org with yout GitHub account to get an API key and 
+# Log in to jsonbin.org with your GitHub user/org account to get an API key and 
 # store it as a repository secret.
 
 # Updated badge will be available at:
@@ -53,13 +53,14 @@ jobs:
 
           fi
 
-      - name: Get base coverage
+      - name: Get ${{ github.event.pull_request.base.sha }} coverage
         run: |
           git checkout $BASE
           echo "BASE_COV=$(docstr-coverage -p)" >> $GITHUB_ENV
 
-      - name: Test head coverage
+      - name: Test ${{ github.event.pull_request.head.sha }} coverage
         run: |
+          echo "$BASE coverage was: $BASE_COV%"
           git checkout $HEAD
           docstr-coverage --fail-under=$BASE_COV
 
@@ -89,6 +90,7 @@ jobs:
 
       - name: Post results
         run: |
+          echo "New coverage is: $NEW_COV%"
           curl -X POST $ENDPOINT/badges/docstr-cov \
           -H "authorization: token $TOKEN" \
           -d "{ \"schemaVersion\": 1, \"label\": \"docstr-cov\", \
